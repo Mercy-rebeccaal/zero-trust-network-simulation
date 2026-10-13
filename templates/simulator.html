@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Access Request Simulator{% endblock %}
+{% block breadcrumb %}Access Request Simulator{% endblock %}
+{% block page_title %}Access Request Simulator{% endblock %}
+{% block page_description %}
+Simulate contextual access requests against micro-segmented protected resources to evaluate dynamic IACTE continuous trust scoring.
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/simulator.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="simulator-layout">
+  <!-- Left Column: Contextual Input Controls -->
+  <div class="simulator-panel">
+    <div class="panel-section-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      1. Target Resource & Operation
+    </div>
+
+    <form id="accessSimulatorForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      {% if session.get('role_name') == 'Administrator' and users %}
+      <div style="margin-bottom: 1rem;">
+        <label class="zt-label" for="target_user_id">Simulate As User (Admin Override)</label>
+        <select id="target_user_id" name="target_user_id" class="zt-select">
+          {% for u in users %}
+          <option value="{{ u.id }}" {% if u.id == session.get('user_id') %}selected{% endif %}>
+            {{ u.username }} ({{ u.role.name if u.role else 'No Role' }}) &mdash; {{ u.full_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <div class="factor-input-row" style="margin-bottom: 1rem;">
+        <div>
+          <label class="zt-label" for="resource_code">Protected Resource</label>
+          <select id="resource_code" name="resource_code" class="zt-select" required>
+            {% for res in resources %}
+            <option value="{{ res.code }}">
+              {{ res.code }} &mdash; {{ res.name }} [Sensitivity: {{ res.sensitivity_name }}]
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="zt-label" for="operation">Requested Operation</label>
+          <select id="operation" name="operation" class="zt-select" required>
+            <option value="READ">READ (Query / View)</option>
+            <option value="WRITE">WRITE (Update / Mutate)</option>
+            <option value="EXECUTE">EXECUTE (Run Job)</option>
+            <option value="ADMIN">ADMIN (Privileged Management)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel-section-title" style="margin-top: 1rem;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        2. Simulated Security Context & Factors
+      </div>
+
+      <!-- Factors Row 1: Identity & Device -->
+      <div class="factor-input-row" style="margin-bottom: 1rem;">
+        <div>
+          <label class="zt-label" for="identity_state">Factor 1: Identity State (w: 0.20)</label>
+          <select id="identity_state" name="identity_state" class="zt-select">
+            <option value="VALID_SESSION">Valid Authenticated Session (90%)</option>
+            <option value="VERIFIED_MFA">Step-2 MFA Pre-Verified (100%)</option>
+            <option value="PROVISIONAL">Password Recently Reset (60%)</option>
+            <option value="UNVERIFIED">Stale / Hijack Indicator (30%)</option>
+          </select>
+        </div>
+        <div>
+          <label class="zt-label" for="device_state">Factor 2: Device Posture (w: 0.15)</label>
+          <select id="device_state" name="device_state" class="zt-select">
+            <option value="MANAGED_COMPLIANT">Corporate Managed & Compliant EDR (95%)</option>
+            <option value="RECOGNIZED_BYOD">Recognized BYOD Mobile / Laptop (75%)</option>
+            <option value="MANAGED_NON_COMPLIANT">Managed with Stale Patches (55%)</option>
+            <option value="UNKNOWN_DEVICE">Unregistered / Unknown Device (40%)</option>
+            <option value="UNHEALTHY_DEVICE">Unhealthy / Vulnerable Endpoint (15%)</option>
+            <option value="JAILBROKEN_OR_COMPROMISED">Compromised / Jailbroken Device (0%)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Factors Row 2: Context & Location -->
+      <div class="factor-input-row" style="margin-bottom: 1rem;">
+        <div>
+          <label class="zt-label" for="time_state">Factor 3: Access Time (w: 0.15)</label>
+          <select id="time_state" name="time_state" class="zt-select">
+            <option value="BUSINESS_HOURS">Standard Business Hours (08:00 - 18:00) (95%)</option>
+            <option value="EXTENDED_HOURS">Extended Operating Hours (80%)</option>
+            <option value="OFF_HOURS_EVENING">Off-Hours Evening (60%)</option>
+            <option value="OFF_HOURS_NIGHT">Late Night (01:00 - 05:00) (35%)</option>
+            <option value="ANOMALOUS_OFF_HOURS">Anomalous Midnight Burst (20%)</option>
+          </select>
+        </div>
+        <div>
+          <label class="zt-label" for="location_state">Factor 3b: Location / Network Subnet</label>
+          <select id="location_state" name="location_state" class="zt-select">
+            <option value="CORP_HQ">Corporate HQ Subnet (100%)</option>
+            <option value="BRANCH_OFFICE">Branch Office LAN (90%)</option>
+            <option value="AUTHORIZED_VPN">Corporate Zero Trust Bastion VPN (85%)</option>
+            <option value="DOMESTIC_REMOTE">Domestic Commercial ISP (70%)</option>
+            <option value="INTERNATIONAL_ROAMING">International Roaming IP (45%)</option>
+            <option value="ANOMALOUS_GEO_TRAVEL">Impossible Geographic Travel Speed (10%)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Factors Row 3: Behaviour & Threat Intel -->
+      <div class="factor-input-row" style="margin-bottom: 1.25rem;">
+        <div>
+          <label class="zt-label" for="behavior_state">Factor 4: Behaviour Pattern (w: 0.15)</label>
+          <select id="behavior_state" name="behavior_state" class="zt-select">
+            <option value="NORMAL_FREQUENCY">Normal Baseline Frequency (95%)</option>
+            <option value="MODERATE_ELEVATION">Moderately Elevated Query Rate (75%)</option>
+            <option value="UNUSUAL_ACCESS_PATTERN">Unusual Resource Hopping (50%)</option>
+            <option value="REPEATED_FAILED_REQUESTS">Repeated Policy Denials (25%)</option>
+            <option value="RAPID_SEQUENCE_BURST">Automated Script Burst (10%)</option>
+            <option value="BRUTE_FORCE_ANOMALY">Brute Force Volumetric Attack (0%)</option>
+          </select>
+        </div>
+        <div>
+          <label class="zt-label" for="threat_state">Factor 7: Threat Intelligence (w: 0.10)</label>
+          <select id="threat_state" name="threat_state" class="zt-select">
+            <option value="CLEAN">Clean IP Reputation (100%)</option>
+            <option value="LOW_RISK_COMMERCIAL_VPN">Commercial VPN Provider (75%)</option>
+            <option value="SUSPICIOUS_UNCLASSIFIED">Suspicious Port Scanning IP (35%)</option>
+            <option value="KNOWN_TOR_EXIT_NODE">Known Tor Exit Node (10%)</option>
+            <option value="KNOWN_BOTNET_OR_MALICIOUS">Known Botnet C2 / Malware Source (0%)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Factors Row 4: Historical Trust -->
+      <div style="margin-bottom: 1.5rem;">
+        <label class="zt-label" for="history_state">Factor 6: Historical Trust (w: 0.15)</label>
+        <select id="history_state" name="history_state" class="zt-select">
+          <option value="HIGH_COMPLIANCE">High Compliance History (&gt;98% Allowed) (95%)</option>
+          <option value="NORMAL">Standard Consistent Compliance (80%)</option>
+          <option value="NEUTRAL">Neutral / New Baseline (70%)</option>
+          <option value="RECENT_DENIALS">Recent Violations in past 24h (40%)</option>
+          <option value="FREQUENT_VIOLATIONS">High Repeat Risk History (15%)</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn-zt-primary" style="width: 100%; padding: 0.8rem; font-size: 1rem;">
+        ⚡ Run Access Evaluation
+      </button>
+    </form>
+  </div>
+
+  <!-- Right Column: Real-time Evaluation Results -->
+  <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+    <!-- Circular Trust Score Gauge -->
+    <div class="gauge-card">
+      <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.8rem; color: var(--text-secondary);">
+        <span>AUTHENTICATED USER: <strong style="color: var(--text-primary);">{{ current_user.username if current_user else session.get('username') }}</strong></span>
+        <span>ROLE: <strong style="color: var(--electric-mint);">{{ session.get('role_name', 'Employee') }}</strong></span>
+      </div>
+
+      <div class="gauge-svg-wrapper">
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle class="gauge-circle-bg" cx="100" cy="100" r="90" />
+          <circle id="gaugeCircleProgress" class="gauge-circle-progress" cx="100" cy="100" r="90" />
+        </svg>
+        <div class="gauge-center-content">
+          <span class="gauge-score-value" id="gaugeScoreValue">0.00</span>
+          <span class="gauge-score-label">Trust Score</span>
+        </div>
+      </div>
+
+      <!-- Decision Outcome Banner -->
+      <div id="decisionOutcomeBox" class="decision-outcome-box" style="display: flex;">
+        <div class="decision-headline" id="decisionHeadline">READY TO EVALUATE</div>
+        <div class="decision-reason-text" id="decisionReasonText">
+          Configure security context parameters and click "Run Access Evaluation" to simulate the continuous Zero Trust pipeline.
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;" id="decisionRequestId">
+          ID: &mdash;
+        </div>
+        
+        <!-- Step-2 MFA Verification Action Button -->
+        <button type="button" id="btn-open-mfa-modal" class="btn-zt-primary" style="display: none; margin-top: 0.5rem; align-self: center; font-size: 0.82rem; padding: 0.45rem 1rem;">
+          🔐 Complete Step-2 MFA Challenge
+        </button>
+      </div>
+
+      <!-- Factor Breakdown Progress Bars -->
+      <div class="factor-breakdown-list">
+        <!-- Factor 1: Identity -->
+        <div class="factor-row">
+          <div class="factor-row-header">
+            <span class="factor-name">Identity Confidence (weight: 0.20)</span>
+            <span class="factor-points" id="factor-val-identity">-- / 100</span>
+          </div>
+          <div class="factor-progress-track">
+            <div id="factor-fill-identity" class="factor-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Factor 2: Device -->
+        <div class="factor-row">
+          <div class="factor-row-header">
+            <span class="factor-name">Device Health & Integrity (weight: 0.15)</span>
+            <span class="factor-points" id="factor-val-device">-- / 100</span>
+          </div>
+          <div class="factor-progress-track">
+            <div id="factor-fill-device" class="factor-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Factor 3: Context -->
+        <div class="factor-row">
+          <div class="factor-row-header">
+            <span class="factor-name">Contextual Posture (weight: 0.15)</span>
+            <span class="factor-points" id="factor-val-context">-- / 100</span>
+          </div>
+          <div class="factor-progress-track">
+            <div id="factor-fill-context" class="factor-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Factor 4: Behaviour -->
+        <div class="factor-row">
+          <div class="factor-row-header">
+            <span class="factor-name">Behavioral Consistency (weight: 0.15)</span>
+            <span class="factor-points" id="factor-val-behaviour">-- / 100</span>
+          </div>
+          <div class="factor-progress-track">
+            <div id="factor-fill-behaviour" class="factor-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Factor 5: Resource Safety -->
+        <div class="factor-row">
+          <div class="factor-row-header">
+            <span class="factor-name">Resource Safety (weight: 0.10)</span>
+            <span class="factor-points" id="factor-val-resource_safety">-- / 100</span>
+          </div>
+          <div class="factor-progress-track">
+            <div id="factor-fill-resource_safety" class="factor-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Factor 6: History -->
+        <div class="factor-row">
+          <div class="factor-row-header">
+            <span class="factor-name">Historical Compliance (weight: 0.15)</span>
+            <span class="factor-points" id="factor-val-historical_trust">-- / 100</span>
+          </div>
+          <div class="factor-progress-track">
+            <div id="factor-fill-historical_trust" class="factor-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Factor 7: Threat Safety -->
+        <div class="factor-row">
+          <div class="factor-row-header">
+            <span class="factor-name">Threat Intelligence Safety (weight: 0.10)</span>
+            <span class="factor-points" id="factor-val-threat_safety">-- / 100</span>
+          </div>
+          <div class="factor-progress-track">
+            <div id="factor-fill-threat_safety" class="factor-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Step-2 Multi-Factor Challenge -->
+<div class="zt-modal-backdrop" id="mfaModal">
+  <div class="zt-modal">
+    <div class="zt-modal-header">
+      <div class="zt-modal-title">
+        <span>🔐</span> Step-2 Adaptive Multi-Factor Challenge
+      </div>
+      <button type="button" class="zt-modal-close" data-modal-close>&times;</button>
+    </div>
+    <form id="mfaVerificationForm">
+      <div class="zt-modal-body">
+        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+          Your simulated trust score falls within the adaptive verification zone (60.00 &ndash; 80.00).
+          To access this resource, enter your secondary 6-digit Time-Based One-Time Password (OTP).
+        </p>
+
+        <div style="background: rgba(20, 184, 166, 0.1); border: 1px solid rgba(20, 184, 166, 0.3); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.8rem; color: var(--electric-mint);">
+          Demonstration OTP Code: <strong style="font-family: var(--font-mono); letter-spacing: 0.1em; font-size: 0.95rem;">739201</strong>
+        </div>
+
+        <div>
+          <label class="zt-label" for="mfaOtpCode">6-Digit Verification Code</label>
+          <input type="text" id="mfaOtpCode" name="mfaOtpCode" class="zt-input" placeholder="739201" maxlength="6" style="font-family: var(--font-mono); font-size: 1.4rem; letter-spacing: 0.3em; text-align: center;" required>
+        </div>
+      </div>
+      <div class="zt-modal-footer">
+        <button type="button" class="btn-zt-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn-zt-primary">Verify & Elevate Access</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/simulator.js') }}"></script>
+{% endblock %}

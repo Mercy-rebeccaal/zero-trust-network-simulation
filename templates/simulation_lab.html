@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Attack & Threat Simulation Lab{% endblock %}
+{% block breadcrumb %}Attack & Threat Lab{% endblock %}
+{% block page_title %}Attack & Threat Simulation Lab{% endblock %}
+{% block page_description %}
+Controlled security test suite demonstrating 10 attack vectors, lateral movement prevention, and adaptive Zero Trust enforcement.
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/simulation-lab.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Suite Control Banner -->
+<div class="suite-control-banner">
+  <div class="suite-stats-group">
+    <div class="stat-item">
+      <div class="stat-val" style="color: var(--electric-mint);" id="suite-pass-rate">--%</div>
+      <div class="stat-lbl">Security Pass Rate</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val" id="suite-passed-count">0 / {{ scenarios|length }}</div>
+      <div class="stat-lbl">Passed Expectations</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val" style="color: var(--ice-blue);" id="suite-total-time">-- ms</div>
+      <div class="stat-lbl">Suite Latency</div>
+    </div>
+  </div>
+
+  <div class="suite-actions">
+    <button type="button" id="btn-reset-simulations" class="btn-zt-secondary" style="font-size: 0.82rem; padding: 0.5rem 1rem;">
+      Reset Results
+    </button>
+    <button type="button" id="btn-run-suite" class="btn-zt-primary" style="font-size: 0.85rem; padding: 0.55rem 1.25rem;">
+      ▶ Run Full Scenario Suite
+    </button>
+  </div>
+</div>
+
+<!-- Scenarios Cards Grid -->
+<div class="scenarios-grid">
+  {% for scn in scenarios %}
+  {% set inputs = scn.inputs if scn.inputs is defined else scn.get_inputs() %}
+  <div class="scenario-card" id="scenario-card-{{ scn.id }}">
+    <div>
+      <div class="scenario-card-header">
+        <div class="scenario-meta">
+          <span class="scenario-code">{{ scn.code }}</span>
+          <h2 class="scenario-title">{{ scn.name }}</h2>
+        </div>
+        <span class="badge-zt badge-info">{{ scn.category }}</span>
+      </div>
+
+      <p class="scenario-desc" style="margin: 0.75rem 0;">{{ scn.objective }}</p>
+
+      <div class="scenario-conditions">
+        <div class="cond-item">Role: <strong>{{ scn.test_user_role }}</strong></div>
+        <div class="cond-item">Target: <strong>{{ scn.test_resource_code }}</strong></div>
+        <div class="cond-item">Op: <strong>{{ inputs.get('operation', 'READ') }}</strong></div>
+        <div class="cond-item">Expected: 
+          {% if scn.expected_decision == 'ALLOW' %}
+            <span style="color: var(--electric-mint); font-weight: 700;">ALLOW</span>
+          {% elif scn.expected_decision == 'ADDITIONAL_VERIFICATION' %}
+            <span style="color: var(--warning-amber); font-weight: 700;">VERIFY</span>
+          {% else %}
+            <span style="color: var(--critical-coral); font-weight: 700;">BLOCK</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Observed Result Details Container -->
+    <div class="scenario-result-details" style="display: none;"></div>
+
+    <div class="scenario-footer">
+      <span class="scenario-result-status badge-zt badge-info">UNTESTED</span>
+      <button type="button" class="btn-zt-secondary btn-run-scenario" data-scenario-id="{{ scn.id }}" style="font-size: 0.78rem; padding: 0.35rem 0.85rem;">
+        Run Test
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/simulation-lab.js') }}"></script>
+{% endblock %}

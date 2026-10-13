@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Security Command Center{% endblock %}
+{% block breadcrumb %}Overview{% endblock %}
+{% block page_title %}Security Command Center{% endblock %}
+{% block page_description %}
+Continuous Zero Trust telemetry, adaptive evaluation distribution, and micro-segmentation access feed.
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Top Action Bar -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+  <div style="font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.5rem;">
+    <span>Environment: <strong>Local Security Simulation</strong></span>
+    <span>&bull;</span>
+    <span>Continuous Verification Engine: <strong style="color: var(--electric-mint);">v2.6.4</strong></span>
+  </div>
+
+  <div style="display: flex; gap: 0.75rem;">
+    <button type="button" id="btn-refresh-dashboard" class="btn-zt-secondary" style="font-size: 0.8rem; padding: 0.45rem 0.9rem;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+      Refresh Feed
+    </button>
+    <a href="{{ url_for('simulator.index') }}" class="btn-zt-primary" style="font-size: 0.8rem; padding: 0.45rem 1rem;">
+      + New Request Evaluation
+    </a>
+  </div>
+</div>
+
+<!-- Active Alert Banner (if any) -->
+{% if metrics.active_alerts_count > 0 %}
+<div class="security-alert-banner">
+  <div class="alert-content-left">
+    <div class="alert-pulse-icon">&#9888;</div>
+    <div>
+      <div class="alert-heading">{{ metrics.active_alerts_count }} Active High-Risk Security Alert(s) Detected</div>
+      <div class="alert-sub">Anomalous requests detected in micro-segmented subnets. Review detailed audit trail.</div>
+    </div>
+  </div>
+  {% if session.get('role_name') == 'Administrator' %}
+  <a href="{{ url_for('audit.index', status='BLOCKED') }}" class="btn-zt-danger" style="font-size: 0.78rem; padding: 0.4rem 0.85rem;">
+    Inspect Blocked Audit Logs &rarr;
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Metrics Summary Cards Grid -->
+<div class="metrics-grid">
+  <!-- Card 1: Total Requests -->
+  <div class="metric-card">
+    <div class="metric-header">
+      <span class="metric-label">Access Requests</span>
+      <div class="metric-icon-box">📋</div>
+    </div>
+    <div class="metric-value" id="metric-total-requests">{{ metrics.total_requests }}</div>
+    <div class="metric-subtext">
+      <span>Evaluated across 4 subnets</span>
+    </div>
+  </div>
+
+  <!-- Card 2: Allowed Requests -->
+  <div class="metric-card mint">
+    <div class="metric-header">
+      <span class="metric-label">High Trust Allowed</span>
+      <div class="metric-icon-box" style="color: var(--electric-mint);">🛡️</div>
+    </div>
+    <div class="metric-value" style="color: var(--electric-mint);" id="metric-allowed-count">{{ metrics.allowed_count }}</div>
+    <div class="metric-subtext">
+      <span style="color: var(--electric-mint);">{{ metrics.allow_rate }}%</span>
+      <span>of all requests</span>
+    </div>
+  </div>
+
+  <!-- Card 3: Additional Verification -->
+  <div class="metric-card amber">
+    <div class="metric-header">
+      <span class="metric-label">Adaptive Challenges</span>
+      <div class="metric-icon-box" style="color: var(--warning-amber);">🔑</div>
+    </div>
+    <div class="metric-value" style="color: var(--warning-amber);">{{ metrics.additional_verif_count + metrics.restricted_count }}</div>
+    <div class="metric-subtext">
+      <span style="color: var(--warning-amber);">{{ metrics.verif_rate }}%</span>
+      <span>MFA or restricted mode</span>
+    </div>
+  </div>
+
+  <!-- Card 4: Blocked Requests -->
+  <div class="metric-card coral">
+    <div class="metric-header">
+      <span class="metric-label">Blocked / Denied</span>
+      <div class="metric-icon-box" style="color: var(--critical-coral);">🚫</div>
+    </div>
+    <div class="metric-value" style="color: var(--critical-coral);" id="metric-blocked-count">{{ metrics.blocked_count }}</div>
+    <div class="metric-subtext">
+      <span style="color: var(--critical-coral);">{{ metrics.block_rate }}%</span>
+      <span>RBAC or low trust</span>
+    </div>
+  </div>
+
+  <!-- Card 5: Average Trust Score -->
+  <div class="metric-card blue">
+    <div class="metric-header">
+      <span class="metric-label">Avg Trust Score</span>
+      <div class="metric-icon-box" style="color: var(--ice-blue);">📈</div>
+    </div>
+    <div class="metric-value" style="color: var(--ice-blue);" id="metric-avg-score">{{ "%.2f"|format(metrics.avg_trust_score) }}</div>
+    <div class="metric-subtext">
+      <span>IACTE Continuous Index (0-100)</span>
+    </div>
+  </div>
+</div>
+
+<!-- Charts 2x2 Grid -->
+<div class="charts-grid-2x2">
+  <!-- Chart 1: Trust Timeline -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Continuous Trust Score Timeline
+      </div>
+      <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">Live Chronological Feed</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="trustTimelineCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 2: Decision Distribution -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+        Adaptive Decision Distribution
+      </div>
+      <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">Allow / Verify / Restrict / Block</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="decisionDistCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 3: Resource Traffic -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
+        Protected Micro-Segment Activity
+      </div>
+      <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">By Subnet Code</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="resourceTrafficCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 4: IACTE Factor Radar -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg>
+        IACTE 7-Factor Radar Averages
+      </div>
+      <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">Normalized 0 - 100</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="factorRadarCanvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Security Activity Table -->
+<div class="zt-card" style="margin-top: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+    <div>
+      <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">Live Access Telemetry & Security Audit</h2>
+      <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">Real-time evaluation log showing RBAC outcomes and continuous trust decisions.</p>
+    </div>
+    {% if session.get('role_name') == 'Administrator' %}
+    <a href="{{ url_for('audit.index') }}" class="btn-zt-secondary" style="font-size: 0.78rem; padding: 0.4rem 0.85rem;">
+      Full Audit Trail &rarr;
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="zt-table-wrapper">
+    <table class="zt-table">
+      <thead>
+        <tr>
+          <th>Event ID</th>
+          <th>Timestamp</th>
+          <th>Actor</th>
+          <th>Resource</th>
+          <th>Action</th>
+          <th>Trust Score</th>
+          <th>Outcome</th>
+          <th>Decision Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for evt in recent_activity %}
+        <tr>
+          <td style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary);">{{ evt.event_id }}</td>
+          <td style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">
+            {{ evt.timestamp.split('T')[1][:8] if evt.timestamp and 'T' in evt.timestamp else evt.timestamp }}
+          </td>
+          <td><strong>{{ evt.actor_username }}</strong></td>
+          <td>
+            {% if evt.resource_code %}
+              <span class="badge-zt badge-info" style="font-size: 0.7rem;">{{ evt.resource_code }}</span>
+            {% else %}
+              <span style="color: var(--text-muted);">N/A</span>
+            {% endif %}
+          </td>
+          <td style="font-family: var(--font-mono); font-size: 0.8rem;">{{ evt.action }}</td>
+          <td>
+            {% if evt.trust_score is not none %}
+              <span style="font-family: var(--font-mono); font-weight: 700; color: {% if evt.trust_score > 80 %}var(--electric-mint){% elif evt.trust_score >= 60 %}var(--warning-amber){% else %}var(--critical-coral){% endif %};">
+                {{ "%.2f"|format(evt.trust_score) }}
+              </span>
+            {% else %}
+              <span style="color: var(--text-muted);">&mdash;</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if evt.decision == 'ALLOW' %}
+              <span class="badge-zt badge-allow">ALLOW</span>
+            {% elif evt.decision == 'ADDITIONAL_VERIFICATION' %}
+              <span class="badge-zt badge-verify">VERIFY</span>
+            {% elif evt.decision == 'RESTRICT' %}
+              <span class="badge-zt badge-restrict">RESTRICT</span>
+            {% elif evt.decision == 'BLOCK' %}
+              <span class="badge-zt badge-block">BLOCK</span>
+            {% else %}
+              <span class="badge-zt badge-info">{{ evt.status }}</span>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.82rem; color: var(--text-secondary); max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ evt.reason }}">
+            {{ evt.reason }}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+            No telemetry records recorded yet. Run a simulation to generate live access events.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Inject chart payload into window for dashboard.js -->
+<script>
+  window.timelineData = {{ timeline|tojson }};
+  window.distributionData = {{ distribution|tojson }};
+  window.resourceData = {{ resources|tojson }};
+  window.factorData = {{ factors|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

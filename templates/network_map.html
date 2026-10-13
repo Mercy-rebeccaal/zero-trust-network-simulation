@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Network Topology & Micro-Segmentation{% endblock %}
+{% block breadcrumb %}Network Topology{% endblock %}
+{% block page_title %}Network Topology & Micro-Segmentation{% endblock %}
+{% block page_description %}
+Interactive structural visualization of the Zero Trust verification pipeline and micro-segmented resource enclaves.
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/network-map.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Interactive Simulation Control Bar -->
+<div class="zt-card" style="margin-bottom: 1.25rem;">
+  <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+      <div>
+        <label class="zt-label" style="margin-bottom: 2px;">Subject Role</label>
+        <select id="sim-topo-role" class="zt-select" style="padding: 0.45rem 0.8rem; font-size: 0.85rem; width: 170px;">
+          <option value="Employee">Employee (David Miller)</option>
+          <option value="Manager">Manager (Sarah Connor)</option>
+          <option value="Administrator">Administrator (Alex Vance)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="zt-label" style="margin-bottom: 2px;">Target Subnet Segment</label>
+        <select id="sim-topo-target" class="zt-select" style="padding: 0.45rem 0.8rem; font-size: 0.85rem; width: 230px;">
+          <option value="SERVER">SERVER (10.0.3.0/24 - Critical)</option>
+          <option value="FINANCE">FINANCE (10.0.2.0/24 - High)</option>
+          <option value="HR">HR (10.0.1.0/24 - Medium)</option>
+          <option value="EMPLOYEE_RECORDS">EMPLOYEE_RECORDS (10.0.4.0/24 - Low)</option>
+        </select>
+      </div>
+
+      <div style="align-self: flex-end;">
+        <button type="button" id="btn-simulate-packet" class="btn-zt-primary" style="padding: 0.5rem 1.25rem; font-size: 0.85rem;">
+          🚀 Transmit Verification Packet
+        </button>
+      </div>
+    </div>
+
+    <div id="topo-sim-status" style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-secondary); max-width: 450px; text-align: right;">
+      Status: Ready for simulation. Select a subject and target segment.
+    </div>
+  </div>
+</div>
+
+<!-- Topology SVG Canvas -->
+<div class="topology-container">
+  <div class="topology-header-toolbar">
+    <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+      Logical Control Plane & Micro-Segmented Data Plane
+    </div>
+
+    <div class="topology-legend">
+      <div class="legend-item"><span class="legend-dot gate"></span> RBAC Gate</div>
+      <div class="legend-item"><span class="legend-dot engine"></span> IACTE Engine</div>
+      <div class="legend-item"><span class="legend-dot allowed"></span> Allowed Flow</div>
+      <div class="legend-item"><span class="legend-dot blocked"></span> Blocked Flow</div>
+      <div class="legend-item"><span class="legend-dot segmented"></span> Isolated Enclave</div>
+    </div>
+  </div>
+
+  <svg class="topology-svg-canvas" viewBox="0 0 1100 620" preserveAspectRatio="xMidYMid meet">
+    <!-- Micro-Segment Enclave Boundary Boxes -->
+    <rect class="segment-boundary-box" x="780" y="40" width="280" height="120" />
+    <text class="segment-label" x="795" y="65">SEGMENT 10: HR (VLAN 10)</text>
+
+    <rect class="segment-boundary-box" x="780" y="180" width="280" height="120" />
+    <text class="segment-label" x="795" y="205">SEGMENT 20: FINANCE (VLAN 20)</text>
+
+    <rect class="segment-boundary-box" x="780" y="320" width="280" height="120" />
+    <text class="segment-label" x="795" y="345">SEGMENT 30: SERVER (VLAN 30)</text>
+
+    <rect class="segment-boundary-box" x="780" y="460" width="280" height="120" />
+    <text class="segment-label" x="795" y="485">SEGMENT 40: RECORDS (VLAN 40)</text>
+
+    <!-- Links / Connectors -->
+    <!-- User -> Auth Gateway -->
+    <line id="link-user-auth" class="topo-link" x1="120" y1="310" x2="240" y2="310" />
+
+    <!-- Auth Gateway -> RBAC Policy Gate -->
+    <line id="link-auth-rbac" class="topo-link" x1="360" y1="310" x2="440" y2="310" />
+
+    <!-- RBAC Gate -> IACTE Engine -->
+    <line id="link-rbac-iacte" class="topo-link" x1="560" y1="310" x2="630" y2="310" />
+
+    <!-- IACTE Engine -> Decision Matrix -->
+    <line id="link-iacte-decision" class="topo-link" x1="750" y1="310" x2="810" y2="310" />
+
+    <!-- Decision Matrix -> HR -->
+    <path id="link-decision-hr" class="topo-link" d="M 870 270 C 870 120, 840 100, 890 100" fill="none" />
+
+    <!-- Decision Matrix -> FINANCE -->
+    <path id="link-decision-finance" class="topo-link" d="M 870 280 C 870 240, 840 240, 890 240" fill="none" />
+
+    <!-- Decision Matrix -> SERVER -->
+    <path id="link-decision-server" class="topo-link" d="M 870 340 C 870 380, 840 380, 890 380" fill="none" />
+
+    <!-- Decision Matrix -> RECORDS -->
+    <path id="link-decision-employee_records" class="topo-link" d="M 870 350 C 870 520, 840 520, 890 520" fill="none" />
+
+    <!-- Logging Connector -->
+    <line class="topo-link" x1="690" y1="350" x2="690" y2="520" />
+
+    <!-- NODES -->
+    <!-- 1. Requesting Subject Node -->
+    <g id="node-user" class="topo-node" data-title="Requesting Subject / Identity" data-detail="User terminal initiating access request with contextual device and location attributes.">
+      <rect class="topo-node-rect" x="30" y="270" width="90" height="80" />
+      <text class="topo-node-title" x="75" y="305">SUBJECT</text>
+      <text class="topo-node-subtitle" x="75" y="325">Identity Node</text>
+    </g>
+
+    <!-- 2. Authentication Gateway -->
+    <g id="node-auth" class="topo-node" data-title="Authentication Gateway" data-detail="Zero Trust edge ingress validating active session tokens, credential integrity, and CSRF validity.">
+      <rect class="topo-node-rect" x="240" y="270" width="120" height="80" />
+      <text class="topo-node-title" x="300" y="305">AUTH GATEWAY</text>
+      <text class="topo-node-subtitle" x="300" y="325">Port 8443 / HTTPS</text>
+    </g>
+
+    <!-- 3. RBAC Policy Gate (Gate 1) -->
+    <g id="node-rbac" class="topo-node" data-title="RBAC Policy Gate" data-detail="Primary least-privilege barrier. Enforces role-resource-operation permissions. Denials cannot be overridden by trust scores.">
+      <rect class="topo-node-rect" x="440" y="270" width="120" height="80" />
+      <text class="topo-node-title" x="500" y="305">RBAC GATE</text>
+      <text class="topo-node-subtitle" x="500" y="325">Role Matrix</text>
+    </g>
+
+    <!-- 4. IACTE Continuous Engine (Gate 2) -->
+    <g id="node-iacte" class="topo-node" data-title="IACTE Trust Engine" data-detail="Intelligent Adaptive Continuous Trust Engine computing 7 contextual security factors (0-100 score).">
+      <rect class="topo-node-rect" x="630" y="270" width="120" height="80" />
+      <text class="topo-node-title" x="690" y="305">IACTE ENGINE</text>
+      <text class="topo-node-subtitle" x="690" y="325">7 Security Factors</text>
+    </g>
+
+    <!-- 5. Audit Logging Node -->
+    <g class="topo-node" data-title="Security Audit & SIEM Collector" data-detail="Immutable logging subsystem recording every RBAC verification, trust evaluation, and anomalous access attempt.">
+      <rect class="topo-node-rect" x="630" y="520" width="120" height="60" />
+      <text class="topo-node-title" x="690" y="548">AUDIT LOGGING</text>
+      <text class="topo-node-subtitle" x="690" y="565">Persistent SQLite</text>
+    </g>
+
+    <!-- 6. Adaptive Decision Matrix -->
+    <g id="node-decision" class="topo-node" data-title="Adaptive Decision Matrix" data-detail="Applies threshold policy: Allow (>80), Adaptive MFA Challenge (60-80), or Block (<60).">
+      <circle cx="870" cy="310" r="30" fill="var(--panel-elevated)" stroke="var(--primary-teal)" stroke-width="2" />
+      <text class="topo-node-title" x="870" y="314" font-size="10">DECISION</text>
+    </g>
+
+    <!-- Protected Resource Segment Nodes -->
+    <!-- Segment 1: HR -->
+    <g id="node-res-hr" class="topo-node" data-title="HR Management Portal" data-detail="Human resources records, benefits management, and payroll. Medium sensitivity (Level 2)." data-subnet="10.0.1.0/24 (VLAN 10)">
+      <rect class="topo-node-rect" x="890" y="70" width="150" height="65" />
+      <text class="topo-node-title" x="965" y="100">HR PORTAL</text>
+      <text class="topo-node-subtitle" x="965" y="118">10.0.1.0/24 (VLAN 10)</text>
+    </g>
+
+    <!-- Segment 2: Finance -->
+    <g id="node-res-finance" class="topo-node" data-title="Corporate Treasury & Ledger" data-detail="High-sensitivity financial records, general ledger, and payment gateways (Level 3)." data-subnet="10.0.2.0/24 (VLAN 20)">
+      <rect class="topo-node-rect" x="890" y="210" width="150" height="65" />
+      <text class="topo-node-title" x="965" y="240">FINANCE LEDGER</text>
+      <text class="topo-node-subtitle" x="965" y="258">10.0.2.0/24 (VLAN 20)</text>
+    </g>
+
+    <!-- Segment 3: Server -->
+    <g id="node-res-server" class="topo-node" data-title="Core Production Infrastructure" data-detail="Mission-critical server control plane and SSH bastions. Critical sensitivity (Level 4)." data-subnet="10.0.3.0/24 (VLAN 30)">
+      <rect class="topo-node-rect" x="890" y="350" width="150" height="65" />
+      <text class="topo-node-title" x="965" y="380">SERVER PLANE</text>
+      <text class="topo-node-subtitle" x="965" y="398">10.0.3.0/24 (VLAN 30)</text>
+    </g>
+
+    <!-- Segment 4: Employee Records -->
+    <g id="node-res-employee_records" class="topo-node" data-title="Staff Directory & Records" data-detail="General corporate contact directory and public team records. Low sensitivity (Level 1)." data-subnet="10.0.4.0/24 (VLAN 40)">
+      <rect class="topo-node-rect" x="890" y="490" width="150" height="65" />
+      <text class="topo-node-title" x="965" y="520">STAFF DIRECTORY</text>
+      <text class="topo-node-subtitle" x="965" y="538">10.0.4.0/24 (VLAN 40)</text>
+    </g>
+  </svg>
+
+  <!-- Interactive Node Hover Tooltip -->
+  <div id="topoTooltip" class="topo-tooltip"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/network-map.js') }}"></script>
+{% endblock %}

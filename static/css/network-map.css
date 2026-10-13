@@ -1,0 +1,155 @@
+/**
+ * ZERO//TRUST Interactive Topology & Micro-Segmentation Stylesheet
+ */
+
+.topology-container {
+  background: var(--panel-navy);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.topology-header-toolbar {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--panel-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topology-legend {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-dot.gate { background: var(--ice-blue); }
+.legend-dot.engine { background: var(--primary-teal); }
+.legend-dot.allowed { background: var(--electric-mint); }
+.legend-dot.blocked { background: var(--critical-coral); }
+.legend-dot.segmented { background: #A855F7; }
+
+.topology-svg-canvas {
+  width: 100%;
+  height: 600px;
+  display: block;
+  background: radial-gradient(circle at 50% 50%, #15223c 0%, #0B1020 80%);
+}
+
+/* SVG Node & Path Styles */
+.topo-link {
+  stroke: var(--border-color);
+  stroke-width: 2;
+  stroke-dasharray: 4, 4;
+  transition: stroke 0.4s ease, stroke-width 0.4s ease;
+}
+
+.topo-link.active-flow {
+  stroke: var(--primary-teal);
+  stroke-width: 3;
+  stroke-dasharray: none;
+  animation: link-pulse 1.5s infinite;
+}
+
+.topo-link.blocked-flow {
+  stroke: var(--critical-coral);
+  stroke-width: 3;
+}
+
+@keyframes link-pulse {
+  0% { stroke-opacity: 0.6; }
+  50% { stroke-opacity: 1; filter: drop-shadow(0 0 6px var(--primary-teal)); }
+  100% { stroke-opacity: 0.6; }
+}
+
+.topo-node {
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.topo-node:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 8px rgba(20, 184, 166, 0.6));
+}
+
+.topo-node-rect {
+  fill: var(--panel-navy);
+  stroke: var(--border-color);
+  stroke-width: 2;
+  rx: 8;
+  transition: stroke 0.3s ease, fill 0.3s ease;
+}
+
+.topo-node.active .topo-node-rect {
+  stroke: var(--primary-teal);
+  fill: var(--panel-elevated);
+}
+
+.topo-node.blocked .topo-node-rect {
+  stroke: var(--critical-coral);
+  fill: rgba(251, 113, 133, 0.1);
+}
+
+.topo-node-title {
+  fill: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.topo-node-subtitle {
+  fill: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-anchor: middle;
+}
+
+.segment-boundary-box {
+  fill: rgba(168, 85, 247, 0.04);
+  stroke: rgba(168, 85, 247, 0.35);
+  stroke-dasharray: 6, 6;
+  stroke-width: 1.5;
+  rx: 12;
+}
+
+.segment-label {
+  fill: #C084FC;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* Tooltip */
+.topo-tooltip {
+  position: absolute;
+  padding: 0.75rem 1rem;
+  background: var(--panel-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  pointer-events: none;
+  box-shadow: var(--shadow-lg);
+  display: none;
+  z-index: 100;
+  max-width: 280px;
+}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}403 Forbidden{% endblock %}
+{% block breadcrumb %}Access Forbidden{% endblock %}
+{% block page_title %}403 Access Denied{% endblock %}
+{% block page_description %}
+The requested security perimeter or administrative resource cannot be accessed with your current role privileges.
+{% endblock %}
+
+{% block content %}
+<div class="zt-card" style="max-width: 600px; margin: 2rem auto; text-align: center; padding: 3rem 2rem;">
+  <div style="font-size: 3.5rem; margin-bottom: 1rem;">🛡️</div>
+  <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--critical-coral); margin-bottom: 0.75rem;">
+    Zero Trust Perimeter Block
+  </h2>
+  <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.75rem;">
+    {{ message or "Your authenticated identity does not hold the mandatory role permissions required to execute this action. All unauthorized attempts are logged to the compliance audit trail." }}
+  </p>
+  <div style="display: flex; justify-content: center; gap: 1rem;">
+    <a href="{{ url_for('dashboard.index') }}" class="btn-zt-primary">Return to Command Center</a>
+    <a href="{{ url_for('simulator.index') }}" class="btn-zt-secondary">Run Simulator</a>
+  </div>
+</div>
+{% endblock %}

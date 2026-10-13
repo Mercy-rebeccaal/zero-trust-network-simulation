@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Trail & Compliance{% endblock %}
+{% block breadcrumb %}Audit Logs{% endblock %}
+{% block page_title %}Audit Trail & Compliance Logs{% endblock %}
+{% block page_description %}
+Immutable security event logging, tracking credential verifications, RBAC evaluations, policy updates, and blocked requests.
+{% endblock %}
+
+{% block content %}
+<!-- Filtering & Search Bar -->
+<div class="zt-card" style="margin-bottom: 1.25rem;">
+  <form method="GET" action="{{ url_for('audit.index') }}" style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem;">
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+      <div>
+        <label class="zt-label">Event Type</label>
+        <select name="event_type" class="zt-select" style="width: 220px; font-size: 0.85rem; padding: 0.45rem 0.8rem;">
+          <option value="">All Event Types</option>
+          {% for et in event_types %}
+          <option value="{{ et }}" {% if selected_type == et %}selected{% endif %}>{{ et }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="zt-label">Status Filter</label>
+        <select name="status" class="zt-select" style="width: 160px; font-size: 0.85rem; padding: 0.45rem 0.8rem;">
+          <option value="">All Statuses</option>
+          <option value="SUCCESS" {% if selected_status == 'SUCCESS' %}selected{% endif %}>SUCCESS</option>
+          <option value="WARNING" {% if selected_status == 'WARNING' %}selected{% endif %}>WARNING</option>
+          <option value="BLOCKED" {% if selected_status == 'BLOCKED' %}selected{% endif %}>BLOCKED</option>
+          <option value="DENIED" {% if selected_status == 'DENIED' %}selected{% endif %}>DENIED</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="zt-label">Search Query</label>
+        <input type="text" name="search" class="zt-input" placeholder="Search actor, reason, event ID..." value="{{ search_query or '' }}" style="width: 260px; font-size: 0.85rem; padding: 0.45rem 0.8rem;">
+      </div>
+
+      <button type="submit" class="btn-zt-primary" style="font-size: 0.85rem; padding: 0.48rem 1.1rem;">
+        Filter Logs
+      </button>
+
+      {% if selected_type or selected_status or search_query %}
+      <a href="{{ url_for('audit.index') }}" class="btn-zt-secondary" style="font-size: 0.85rem; padding: 0.48rem 0.9rem;">
+        Clear Filters
+      </a>
+      {% endif %}
+    </div>
+
+    <div>
+      <a href="{{ url_for('audit.export_csv', event_type=selected_type, status=selected_status) }}" class="btn-zt-secondary" style="font-size: 0.85rem; padding: 0.48rem 1.1rem;">
+        📥 Export to CSV
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Logs Table -->
+<div class="zt-card">
+  <div class="zt-table-wrapper">
+    <table class="zt-table">
+      <thead>
+        <tr>
+          <th>Event ID</th>
+          <th>Timestamp (UTC)</th>
+          <th>Event Type</th>
+          <th>Actor</th>
+          <th>Target</th>
+          <th>Action</th>
+          <th>Status</th>
+          <th>Score</th>
+          <th>Decision</th>
+          <th>Details & Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary);">{{ log.event_id }}</td>
+          <td style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">
+            {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '' }}
+          </td>
+          <td><span class="badge-zt badge-info" style="font-size: 0.7rem;">{{ log.event_type }}</span></td>
+          <td><strong>{{ log.actor_username }}</strong></td>
+          <td>
+            {% if log.resource_code %}
+              <span style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--primary-teal);">{{ log.resource_code }}</span>
+            {% else %}
+              <span style="color: var(--text-muted);">&mdash;</span>
+            {% endif %}
+          </td>
+          <td style="font-family: var(--font-mono); font-size: 0.78rem;">{{ log.action }}</td>
+          <td>
+            {% if log.status == 'SUCCESS' %}
+              <span class="badge-zt badge-allow" style="font-size: 0.7rem;">SUCCESS</span>
+            {% elif log.status == 'WARNING' %}
+              <span class="badge-zt badge-verify" style="font-size: 0.7rem;">WARNING</span>
+            {% elif log.status in ('BLOCKED', 'DENIED') %}
+              <span class="badge-zt badge-block" style="font-size: 0.7rem;">{{ log.status }}</span>
+            {% else %}
+              <span class="badge-zt badge-info" style="font-size: 0.7rem;">{{ log.status }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if log.trust_score is not none %}
+              <span style="font-family: var(--font-mono); font-weight: 700;">{{ "%.2f"|format(log.trust_score) }}</span>
+            {% else %}
+              <span style="color: var(--text-muted);">&mdash;</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if log.decision == 'ALLOW' %}
+              <span class="badge-zt badge-allow" style="font-size: 0.7rem;">ALLOW</span>
+            {% elif log.decision == 'ADDITIONAL_VERIFICATION' %}
+              <span class="badge-zt badge-verify" style="font-size: 0.7rem;">VERIFY</span>
+            {% elif log.decision == 'BLOCK' %}
+              <span class="badge-zt badge-block" style="font-size: 0.7rem;">BLOCK</span>
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 0.75rem;">{{ log.decision or '&mdash;' }}</span>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-secondary); max-width: 320px; line-height: 1.4;">
+            {{ log.reason }}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+            No audit records match the current filter criteria.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination Bar -->
+  {% if pagination and pagination.pages > 1 %}
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; font-size: 0.82rem; color: var(--text-secondary);">
+    <div>Showing page {{ pagination.page }} of {{ pagination.pages }} ({{ pagination.total }} total events)</div>
+    <div style="display: flex; gap: 0.5rem;">
+      {% if pagination.has_prev %}
+      <a href="{{ url_for('audit.index', page=pagination.prev_num, event_type=selected_type, status=selected_status, search=search_query) }}" class="btn-zt-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;">
+        &laquo; Previous
+      </a>
+      {% endif %}
+
+      {% if pagination.has_next %}
+      <a href="{{ url_for('audit.index', page=pagination.next_num, event_type=selected_type, status=selected_status, search=search_query) }}" class="btn-zt-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;">
+        Next &raquo;
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

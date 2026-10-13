@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}User & Identity Management{% endblock %}
+{% block breadcrumb %}User Directory{% endblock %}
+{% block page_title %}User & Identity Management{% endblock %}
+{% block page_description %}
+Manage user accounts, assign role permissions, reset authentication credentials, and enforce access states.
+{% endblock %}
+
+{% block content %}
+<div class="zt-card" style="margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+    <div>
+      <h2 style="font-size: 1.1rem; font-weight: 700;">Directory Identities</h2>
+      <p style="font-size: 0.8rem; color: var(--text-secondary);">Configured identities subject to continuous verification policies.</p>
+    </div>
+    <button type="button" class="btn-zt-primary" onclick="openCreateUserModal()" style="font-size: 0.82rem; padding: 0.45rem 1rem;">
+      + Create Identity
+    </button>
+  </div>
+
+  <div class="zt-table-wrapper">
+    <table class="zt-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Username</th>
+          <th>Full Name</th>
+          <th>Role</th>
+          <th>Department</th>
+          <th>Status</th>
+          <th>Last Login</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="font-family: var(--font-mono); font-size: 0.78rem;">#{{ u.id }}</td>
+          <td><strong>{{ u.username }}</strong></td>
+          <td>{{ u.full_name }}</td>
+          <td>
+            <span class="badge-zt {% if u.role and u.role.name == 'Administrator' %}badge-allow{% elif u.role and u.role.name == 'Manager' %}badge-verify{% else %}badge-info{% endif %}">
+              {{ u.role.name if u.role else 'None' }}
+            </span>
+          </td>
+          <td style="color: var(--text-secondary); font-size: 0.82rem;">{{ u.department }}</td>
+          <td>
+            {% if u.is_active %}
+              <span class="badge-zt badge-allow" style="font-size: 0.7rem;">Active</span>
+            {% else %}
+              <span class="badge-zt badge-block" style="font-size: 0.7rem;">Deactivated</span>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-muted);">
+            {{ u.last_login_at.strftime('%Y-%m-%d %H:%M') if u.last_login_at else 'Never' }}
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.5rem;">
+              <button type="button" class="btn-zt-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="openResetPasswordModal('{{ u.id }}', '{{ u.username }}')">
+                Reset PW
+              </button>
+              <button type="button" class="btn-zt-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="toggleUserStatus('{{ u.id }}', {{ 'false' if u.is_active else 'true' }})">
+                {{ 'Deactivate' if u.is_active else 'Activate' }}
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Create Identity -->
+<div class="zt-modal-backdrop" id="createUserModal">
+  <div class="zt-modal">
+    <div class="zt-modal-header">
+      <div class="zt-modal-title"><span>👤</span> Register New Identity</div>
+      <button type="button" class="zt-modal-close" data-modal-close>&times;</button>
+    </div>
+    <form id="createUserForm" onsubmit="handleCreateUser(event)">
+      <div class="zt-modal-body">
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Username</label>
+          <input type="text" name="username" class="zt-input" required placeholder="e.g. jdoe">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Email Address</label>
+          <input type="email" name="email" class="zt-input" required placeholder="jdoe@zerotrust.local">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Full Name</label>
+          <input type="text" name="full_name" class="zt-input" required placeholder="Jane Doe">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Department</label>
+          <input type="text" name="department" class="zt-input" value="Engineering" required>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Initial Role</label>
+          <select name="role_id" class="zt-select" required>
+            {% for r in roles %}
+            <option value="{{ r.id }}">{{ r.name }} &mdash; {{ r.description }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Initial Password</label>
+          <input type="password" name="password" class="zt-input" required placeholder="••••••••••••">
+        </div>
+      </div>
+      <div class="zt-modal-footer">
+        <button type="button" class="btn-zt-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn-zt-primary">Create Identity</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Reset Password -->
+<div class="zt-modal-backdrop" id="resetPasswordModal">
+  <div class="zt-modal">
+    <div class="zt-modal-header">
+      <div class="zt-modal-title"><span>🔑</span> Reset Password</div>
+      <button type="button" class="zt-modal-close" data-modal-close>&times;</button>
+    </div>
+    <form id="resetPasswordForm" onsubmit="handleResetPassword(event)">
+      <input type="hidden" id="resetUserId" name="userId">
+      <div class="zt-modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+          Administrative reset for user: <strong id="resetUsernameDisplay" style="color: var(--primary-teal);"></strong>
+        </p>
+        <div>
+          <label class="zt-label">New Password</label>
+          <input type="password" id="newPasswordInput" class="zt-input" required placeholder="Enter new secure password (min 6 chars)">
+        </div>
+      </div>
+      <div class="zt-modal-footer">
+        <button type="button" class="btn-zt-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn-zt-primary">Save New Password</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function openCreateUserModal() {
+    document.getElementById('createUserModal').classList.add('active');
+  }
+
+  function openResetPasswordModal(id, username) {
+    document.getElementById('resetUserId').value = id;
+    document.getElementById('resetUsernameDisplay').innerText = username;
+    document.getElementById('resetPasswordModal').classList.add('active');
+  }
+
+  async function handleCreateUser(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("User created successfully!", "success");
+        setTimeout(() => location.reload(), 600);
+      } else {
+        showToast(data.error || "Failed to create user", "danger");
+      }
+    } catch (err) {
+      showToast("Network error creating user", "danger");
+    }
+  }
+
+  async function handleResetPassword(e) {
+    e.preventDefault();
+    const userId = document.getElementById('resetUserId').value;
+    const newPassword = document.getElementById('newPasswordInput').value;
+
+    try {
+      const res = await fetch(`/api/users/${userId}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_password: newPassword })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("Password reset successfully!", "success");
+        document.getElementById('resetPasswordModal').classList.remove('active');
+      } else {
+        showToast(data.error || "Reset failed", "danger");
+      }
+    } catch (err) {
+      showToast("Network error resetting password", "danger");
+    }
+  }
+
+  async function toggleUserStatus(userId, targetActive) {
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: targetActive })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("User status updated!", "success");
+        setTimeout(() => location.reload(), 500);
+      } else {
+        showToast(data.error || "Failed to update status", "danger");
+      }
+    } catch (err) {
+      showToast("Network error updating status", "danger");
+    }
+  }
+</script>
+{% endblock %}

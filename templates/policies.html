@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Policy Engine Matrix{% endblock %}
+{% block breadcrumb %}Access Policies{% endblock %}
+{% block page_title %}Policy Engine Matrix{% endblock %}
+{% block page_description %}
+Role-to-resource authorization rules, minimum required trust score thresholds, and mandatory MFA triggers.
+{% endblock %}
+
+{% block content %}
+<div class="zt-card" style="margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+    <div>
+      <h2 style="font-size: 1.1rem; font-weight: 700;">Role-Resource Access Rules</h2>
+      <p style="font-size: 0.8rem; color: var(--text-secondary);">Enforces baseline RBAC and specifies mandatory continuous trust prerequisites.</p>
+    </div>
+    <button type="button" class="btn-zt-primary" onclick="openPolicyModal()" style="font-size: 0.82rem; padding: 0.45rem 1rem;">
+      + Configure Policy Rule
+    </button>
+  </div>
+
+  <div class="zt-table-wrapper">
+    <table class="zt-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Role</th>
+          <th>Resource</th>
+          <th>Allowed Operations</th>
+          <th>Min Trust Score</th>
+          <th>MFA Enforced</th>
+          <th>Status</th>
+          <th>Restriction Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in policies %}
+        <tr>
+          <td style="font-family: var(--font-mono); font-size: 0.78rem;">#{{ p.id }}</td>
+          <td>
+            <span class="badge-zt {% if p.role.name == 'Administrator' %}badge-allow{% elif p.role.name == 'Manager' %}badge-verify{% else %}badge-info{% endif %}">
+              {{ p.role.name }}
+            </span>
+          </td>
+          <td><strong style="color: var(--primary-teal); font-family: var(--font-mono);">{{ p.resource.code }}</strong></td>
+          <td style="font-family: var(--font-mono); font-size: 0.82rem;">{{ p.allowed_operations }}</td>
+          <td>
+            <span style="font-family: var(--font-mono); font-weight: 700; color: var(--ice-blue);">
+              &ge; {{ "%.1f"|format(p.min_trust_score) }}
+            </span>
+          </td>
+          <td>
+            {% if p.require_mfa %}
+              <span class="badge-zt badge-verify" style="font-size: 0.7rem;">Mandatory MFA</span>
+            {% else %}
+              <span class="badge-zt badge-info" style="font-size: 0.7rem;">Adaptive</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if p.is_active %}
+              <span class="badge-zt badge-allow" style="font-size: 0.7rem;">Active</span>
+            {% else %}
+              <span class="badge-zt badge-block" style="font-size: 0.7rem;">Disabled</span>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.82rem; color: var(--text-secondary); max-width: 200px;">{{ p.restriction_notes or 'Standard least-privilege' }}</td>
+          <td>
+            <button type="button" class="btn-zt-danger" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="deletePolicy('{{ p.id }}')">
+              Delete
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Policy Rule Config -->
+<div class="zt-modal-backdrop" id="policyModal">
+  <div class="zt-modal">
+    <div class="zt-modal-header">
+      <div class="zt-modal-title"><span>⚙️</span> Configure Policy Rule</div>
+      <button type="button" class="zt-modal-close" data-modal-close>&times;</button>
+    </div>
+    <form id="policyForm" onsubmit="handleSavePolicy(event)">
+      <div class="zt-modal-body">
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Select Role</label>
+          <select name="role_id" class="zt-select" required>
+            {% for r in roles %}
+            <option value="{{ r.id }}">{{ r.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Target Resource</label>
+          <select name="resource_id" class="zt-select" required>
+            {% for res in resources %}
+            <option value="{{ res.id }}">{{ res.code }} &mdash; {{ res.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Allowed Operations (Comma-Separated)</label>
+          <input type="text" name="allowed_operations" class="zt-input" required value="READ,WRITE" placeholder="e.g. READ,WRITE,EXECUTE,ADMIN">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Minimum Required Trust Score (0 - 100)</label>
+          <input type="number" step="0.1" min="0" max="100" name="min_trust_score" class="zt-input" required value="60.0">
+        </div>
+        <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <input type="checkbox" id="require_mfa_check" name="require_mfa" value="1">
+          <label for="require_mfa_check" style="font-size: 0.85rem; color: var(--text-primary); cursor: pointer;">
+            Enforce Mandatory Step-Up MFA Challenge regardless of trust score
+          </label>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Policy Notes / Restriction Logic</label>
+          <input type="text" name="restriction_notes" class="zt-input" placeholder="e.g. Restricted to read-only during provisional trust">
+        </div>
+      </div>
+      <div class="zt-modal-footer">
+        <button type="button" class="btn-zt-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn-zt-primary">Save Policy Rule</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function openPolicyModal() {
+    document.getElementById('policyModal').classList.add('active');
+  }
+
+  async function handleSavePolicy(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+    payload.require_mfa = document.getElementById('require_mfa_check').checked;
+
+    try {
+      const res = await fetch('/api/policies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("Access policy saved successfully!", "success");
+        setTimeout(() => location.reload(), 500);
+      } else {
+        showToast(data.error || "Failed to save policy", "danger");
+      }
+    } catch (err) {
+      showToast("Network error saving policy", "danger");
+    }
+  }
+
+  async function deletePolicy(policyId) {
+    if (!confirm("Are you sure you want to delete this access policy rule?")) return;
+
+    try {
+      const res = await fetch(`/api/policies/${policyId}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("Policy rule removed", "info");
+        setTimeout(() => location.reload(), 500);
+      } else {
+        showToast(data.error || "Failed to delete policy", "danger");
+      }
+    } catch (err) {
+      showToast("Network error deleting policy", "danger");
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,213 @@
+/**
+ * ZERO//TRUST Access Request Simulator Stylesheet
+ * Trust Score Animated Radial Gauge, Factor Sliders, Adaptive Decision Badges
+ */
+
+.simulator-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 1.5rem;
+}
+
+/* Control Panel */
+.simulator-panel {
+  background: var(--panel-navy);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.panel-section-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary-teal);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.factor-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Trust Score Gauge Card */
+.gauge-card {
+  background: var(--panel-navy);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.gauge-svg-wrapper {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 1rem auto;
+}
+
+.gauge-svg {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.gauge-circle-bg {
+  fill: none;
+  stroke: var(--panel-elevated);
+  stroke-width: 14;
+}
+
+.gauge-circle-progress {
+  fill: none;
+  stroke: var(--primary-teal);
+  stroke-width: 14;
+  stroke-linecap: round;
+  stroke-dasharray: 565.48;
+  stroke-dashoffset: 565.48;
+  transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease;
+  filter: drop-shadow(0 0 8px var(--teal-glow));
+}
+
+.gauge-center-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gauge-score-value {
+  font-size: 2.8rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.gauge-score-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 0.25rem;
+}
+
+/* Decision Outcome Banner */
+.decision-outcome-box {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: center;
+  margin-top: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.decision-outcome-box.ALLOW {
+  background: rgba(20, 184, 166, 0.12);
+  border: 1px solid rgba(20, 184, 166, 0.5);
+  box-shadow: 0 0 16px rgba(20, 184, 166, 0.15);
+}
+
+.decision-outcome-box.ADDITIONAL_VERIFICATION {
+  background: rgba(245, 185, 66, 0.12);
+  border: 1px solid rgba(245, 185, 66, 0.5);
+  box-shadow: 0 0 16px rgba(245, 185, 66, 0.15);
+}
+
+.decision-outcome-box.RESTRICT {
+  background: rgba(115, 191, 255, 0.12);
+  border: 1px solid rgba(115, 191, 255, 0.5);
+  box-shadow: 0 0 16px rgba(115, 191, 255, 0.15);
+}
+
+.decision-outcome-box.BLOCK {
+  background: rgba(251, 113, 133, 0.12);
+  border: 1px solid rgba(251, 113, 133, 0.5);
+  box-shadow: 0 0 16px rgba(251, 113, 133, 0.15);
+}
+
+.decision-headline {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.decision-reason-text {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Factor Contributions Bars */
+.factor-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.factor-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.factor-row-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+}
+
+.factor-name {
+  color: var(--text-secondary);
+}
+
+.factor-points {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.factor-progress-track {
+  height: 6px;
+  background: var(--panel-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.factor-progress-fill {
+  height: 100%;
+  background: var(--primary-teal);
+  border-radius: var(--radius-full);
+  transition: width 0.6s ease;
+}
+
+@media (max-width: 900px) {
+  .simulator-layout {
+    grid-template-columns: 1fr;
+  }
+}

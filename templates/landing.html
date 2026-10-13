@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZERO//TRUST — Intelligent Zero Trust Network Simulation Platform</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
+  <style>
+    .landing-nav {
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4rem;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(11, 16, 32, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .landing-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .hero-section {
+      padding: 6rem 4rem 5rem 4rem;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 4rem;
+      align-items: center;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      background: rgba(20, 184, 166, 0.12);
+      border: 1px solid rgba(20, 184, 166, 0.4);
+      color: var(--electric-mint);
+      border-radius: var(--radius-full);
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+    }
+    .hero-title {
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+      color: #FFFFFF;
+    }
+    .hero-title span {
+      background: linear-gradient(135deg, var(--primary-teal), var(--electric-mint));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 2.25rem;
+    }
+    .hero-cta-group {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .hero-visual {
+      background: var(--panel-navy);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(20, 184, 166, 0.15);
+      position: relative;
+    }
+    .features-section {
+      padding: 5rem 4rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .section-header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+    .section-tag {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--primary-teal);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+    .section-headline {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--panel-navy);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.75rem;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(20, 184, 166, 0.5);
+    }
+    .feature-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: var(--panel-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-teal);
+      margin-bottom: 1.25rem;
+    }
+    .feature-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.6rem;
+    }
+    .feature-text {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .workflow-section {
+      padding: 5rem 4rem;
+      background: var(--panel-navy);
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .workflow-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .step-card {
+      background: var(--panel-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.75rem;
+      position: relative;
+    }
+    .step-num {
+      font-size: 2.5rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: rgba(20, 184, 166, 0.35);
+      line-height: 1;
+      margin-bottom: 0.75rem;
+    }
+    .footer {
+      padding: 3rem 4rem;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    @media (max-width: 900px) {
+      .landing-nav { padding: 0 1.5rem; }
+      .hero-section { grid-template-columns: 1fr; padding: 3rem 1.5rem; }
+      .hero-title { font-size: 2.4rem; }
+      .workflow-steps { grid-template-columns: 1fr; }
+      .features-section { padding: 3rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Landing Navigation -->
+  <header class="landing-nav">
+    <div class="landing-brand">
+      <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+        <polygon points="20,2 38,11 38,29 20,38 2,29 2,11" stroke="#14B8A6" stroke-width="2.5" fill="rgba(20, 184, 166, 0.12)"/>
+        <path d="M20 10V30M11 15L29 25M11 25L29 15" stroke="#6EE7C8" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <div style="font-weight: 800; font-size: 1.2rem; letter-spacing: 0.05em;">ZERO<span style="color: var(--primary-teal);">//</span>TRUST</div>
+    </div>
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <a href="{{ url_for('auth.login') }}" class="btn-zt-secondary" style="font-size: 0.85rem;">Sign In</a>
+      <a href="{{ url_for('dashboard.index') }}" class="btn-zt-primary" style="font-size: 0.85rem;">Launch Console</a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div>
+      <div class="hero-tag">
+        <span>&bull;</span> NEVER TRUST. ALWAYS VERIFY.
+      </div>
+      <h1 class="hero-title">
+        Security Begins With <span>Verification.</span>
+      </h1>
+      <p class="hero-subtitle">
+        An enterprise-grade Zero Trust Network Simulation Platform driven by the
+        <strong>Intelligent Adaptive Continuous Trust Engine (IACTE)</strong>.
+        Continuously evaluate 7 identity and behavioral factors, enforce least-privilege RBAC,
+        and isolate protected assets within micro-segmented network boundaries.
+      </p>
+      <div class="hero-cta-group">
+        <a href="{{ url_for('dashboard.index') }}" class="btn-zt-primary" style="padding: 0.8rem 1.75rem; font-size: 1rem;">
+          Launch Security Console &rarr;
+        </a>
+        <a href="{{ url_for('simulator.index') }}" class="btn-zt-secondary" style="padding: 0.8rem 1.5rem; font-size: 1rem;">
+          Explore the Simulator
+        </a>
+      </div>
+    </div>
+
+    <!-- Hero Illustration / Mock Trust Display -->
+    <div class="hero-visual">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <span class="badge-zt badge-allow">&#9679; IACTE ACTIVE</span>
+        <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary);">NODE: 10.0.3.55</span>
+      </div>
+
+      <div style="text-align: center; margin: 1.5rem 0;">
+        <div style="font-size: 3.5rem; font-weight: 800; font-family: var(--font-mono); color: var(--electric-mint); line-height: 1;">
+          88.40
+        </div>
+        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.08em; margin-top: 0.4rem;">
+          Continuous Trust Score (ALLOW)
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.8rem;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-secondary);">Identity Verification (w: 0.20)</span>
+          <span style="color: var(--text-primary); font-family: var(--font-mono);">95.0 / 100</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-secondary);">Device Integrity (w: 0.15)</span>
+          <span style="color: var(--text-primary); font-family: var(--font-mono);">90.0 / 100</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-secondary);">Behavioral Pattern (w: 0.15)</span>
+          <span style="color: var(--text-primary); font-family: var(--font-mono);">95.0 / 100</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-secondary);">Threat Intel Safety (w: 0.10)</span>
+          <span style="color: var(--text-primary); font-family: var(--font-mono);">100.0 / 100</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem; padding: 0.75rem; background: var(--panel-elevated); border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-size: 0.78rem; color: var(--text-secondary);">
+        <strong style="color: var(--electric-mint);">&#10003; RBAC Policy Gate Passed:</strong> Administrator role granted for SERVER infrastructure.
+      </div>
+    </div>
+  </section>
+
+  <!-- 3-Step Zero Trust Workflow -->
+  <section class="workflow-section">
+    <div class="section-header">
+      <div class="section-tag">Zero Trust Pipeline</div>
+      <h2 class="section-headline">Continuous Adaptive Enforcement</h2>
+    </div>
+
+    <div class="workflow-steps">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">Authenticate & Contextualize</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+          Verify user credentials and collect rich endpoint context, device compliance health, geo-location, and access time.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">IACTE Trust Calculation</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+          Evaluate the 7 security factors using weighted continuous scoring (0-100), ensuring anomalous behaviors degrade trust instantly.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">Enforce Adaptive Policy</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+          Execute strict boundary thresholds: Allow (&gt;80), Step-Up MFA Challenge (60-80), or Immediate Block (&lt;60 or RBAC denial).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Core Pillars Features -->
+  <section class="features-section">
+    <div class="section-header">
+      <div class="section-tag">Platform Architecture</div>
+      <h2 class="section-headline">Engineered for Academic & Enterprise Simulation</h2>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon-box">🛡️</div>
+        <h3 class="feature-title">Least-Privilege RBAC Gate</h3>
+        <p class="feature-text">
+          Zero Trust rule: A high trust score never bypasses RBAC. If an employee requests core server resources, access is blocked unconditionally.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-box">⚡</div>
+        <h3 class="feature-title">7-Factor IACTE Engine</h3>
+        <p class="feature-text">
+          Mathematical engine combining Identity (0.20), Device (0.15), Context (0.15), Behaviour (0.15), Resource Safety (0.10), History (0.15), and Threat Intel (0.10).
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-box">🌐</div>
+        <h3 class="feature-title">Network Micro-Segmentation</h3>
+        <p class="feature-text">
+          Visual network topology isolating HR (VLAN 10), Finance (VLAN 20), Server (VLAN 30), and Employee Records (VLAN 40) into dedicated subnets.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-box">🎯</div>
+        <h3 class="feature-title">Attack & Threat Lab</h3>
+        <p class="feature-text">
+          10 pre-configured attack scenarios testing unauthorized lateral movement, brute-force bursts, Tor exit nodes, and compromised session hijacking.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-box">📊</div>
+        <h3 class="feature-title">Security Command Center</h3>
+        <p class="feature-text">
+          Real-time metrics, decision doughnuts, trust timeline trends, resource activity distributions, and factor radar analytics.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-box">📜</div>
+        <h3 class="feature-title">Immutable Audit Trail</h3>
+        <p class="feature-text">
+          Every evaluation, policy modification, and login event is permanently recorded in an SQLite database with instant CSV compliance exports.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Educational Disclaimer Banner -->
+  <section style="background: rgba(17, 26, 46, 0.7); border-top: 1px solid var(--border-color); padding: 3rem 4rem; text-align: center;">
+    <div style="max-width: 800px; margin: 0 auto;">
+      <h4 style="color: var(--warning-amber); font-size: 0.95rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+        Research & Educational Simulation Notice
+      </h4>
+      <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
+        ZERO//TRUST is an educational and engineering simulation platform designed to demonstrate adaptive Zero Trust network principles.
+        All attacks, threat indicators, and network telemetry are simulated in a controlled local environment and do not interact with live production networks.
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1.5rem; font-size: 0.85rem;">
+      <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
+      <a href="{{ url_for('simulator.index') }}">Simulator</a>
+      <a href="{{ url_for('network.index') }}">Network Map</a>
+      <a href="{{ url_for('simulation.index') }}">Threat Lab</a>
+      <a href="{{ url_for('auth.login') }}">Admin Login</a>
+    </div>
+    <div>&copy; 2026 ZERO//TRUST Security Platform &bull; Final-Year Engineering Project &bull; Built with Python, Flask, and SQLite</div>
+  </footer>
+</body>
+</html>

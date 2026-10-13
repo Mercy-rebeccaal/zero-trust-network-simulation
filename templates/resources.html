@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Protected Resources{% endblock %}
+{% block breadcrumb %}Resources{% endblock %}
+{% block page_title %}Protected Micro-Segmented Resources{% endblock %}
+{% block page_description %}
+Enclave inventory of enterprise resources, categorized by subnet segmentation and sensitivity risk ratings.
+{% endblock %}
+
+{% block content %}
+<div class="zt-card" style="margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+    <div>
+      <h2 style="font-size: 1.1rem; font-weight: 700;">Protected Assets</h2>
+      <p style="font-size: 0.8rem; color: var(--text-secondary);">Isolated networks requiring continuous zero-trust evaluation.</p>
+    </div>
+    {% if session.get('role_name') == 'Administrator' %}
+    <button type="button" class="btn-zt-primary" onclick="openCreateResourceModal()" style="font-size: 0.82rem; padding: 0.45rem 1rem;">
+      + Add Protected Resource
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="zt-table-wrapper">
+    <table class="zt-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Resource Name</th>
+          <th>Subnet Segment</th>
+          <th>Category</th>
+          <th>Sensitivity Level</th>
+          <th>Status</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for res in resources %}
+        <tr>
+          <td><strong style="color: var(--primary-teal); font-family: var(--font-mono);">{{ res.code }}</strong></td>
+          <td><strong>{{ res.name }}</strong></td>
+          <td style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--ice-blue);">{{ res.subnet_segment }}</td>
+          <td><span class="badge-zt badge-info">{{ res.category }}</span></td>
+          <td>
+            {% if res.sensitivity_level == 4 %}
+              <span class="badge-zt badge-block">Critical (Level 4)</span>
+            {% elif res.sensitivity_level == 3 %}
+              <span class="badge-zt badge-verify">High (Level 3)</span>
+            {% elif res.sensitivity_level == 2 %}
+              <span class="badge-zt badge-restrict">Medium (Level 2)</span>
+            {% else %}
+              <span class="badge-zt badge-allow">Low (Level 1)</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if res.is_active %}
+              <span class="badge-zt badge-allow" style="font-size: 0.7rem;">Active</span>
+            {% else %}
+              <span class="badge-zt badge-block" style="font-size: 0.7rem;">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.82rem; color: var(--text-secondary); max-width: 250px;">{{ res.description }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Add Protected Resource -->
+<div class="zt-modal-backdrop" id="createResourceModal">
+  <div class="zt-modal">
+    <div class="zt-modal-header">
+      <div class="zt-modal-title"><span>🛡️</span> Register Protected Resource</div>
+      <button type="button" class="zt-modal-close" data-modal-close>&times;</button>
+    </div>
+    <form id="createResourceForm" onsubmit="handleCreateResource(event)">
+      <div class="zt-modal-body">
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Resource Code (e.g. ERP)</label>
+          <input type="text" name="code" class="zt-input" required placeholder="ERP" style="text-transform: uppercase;">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Resource Name</label>
+          <input type="text" name="name" class="zt-input" required placeholder="Enterprise Resource Planning Portal">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Category</label>
+          <input type="text" name="category" class="zt-input" required value="Corporate App">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Isolated Subnet Segment (VLAN)</label>
+          <input type="text" name="subnet_segment" class="zt-input" required value="10.0.5.0/24 (VLAN 50)">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Sensitivity Rating</label>
+          <select name="sensitivity_level" class="zt-select" required>
+            <option value="1">Level 1 &mdash; Low (Staff directory, general files)</option>
+            <option value="2" selected>Level 2 &mdash; Medium (HR portal, internal wiki)</option>
+            <option value="3">Level 3 &mdash; High (Financial ledgers, treasury)</option>
+            <option value="4">Level 4 &mdash; Critical (Core infrastructure, root bastion)</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label class="zt-label">Description</label>
+          <textarea name="description" class="zt-textarea" rows="2" placeholder="Asset description..."></textarea>
+        </div>
+      </div>
+      <div class="zt-modal-footer">
+        <button type="button" class="btn-zt-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn-zt-primary">Save Resource</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function openCreateResourceModal() {
+    document.getElementById('createResourceModal').classList.add('active');
+  }
+
+  async function handleCreateResource(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch('/api/resources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("Resource registered successfully!", "success");
+        setTimeout(() => location.reload(), 500);
+      } else {
+        showToast(data.error || "Failed to register resource", "danger");
+      }
+    } catch (err) {
+      showToast("Network error registering resource", "danger");
+    }
+  }
+</script>
+{% endblock %}

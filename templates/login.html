@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — ZERO//TRUST Security Console</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: radial-gradient(circle at 50% 30%, #15223c 0%, #0B1020 70%);
+      padding: 1.5rem;
+    }
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+    }
+    .login-card {
+      background: var(--panel-navy);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(20, 184, 166, 0.15);
+    }
+    .brand-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .brand-logo-large {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 0.75rem;
+      filter: drop-shadow(0 0 10px var(--primary-teal));
+    }
+    .login-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: var(--text-primary);
+    }
+    .login-title span { color: var(--primary-teal); }
+    .login-subtitle {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+    .demo-creds-box {
+      margin-top: 1.75rem;
+      background: var(--panel-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      font-size: 0.78rem;
+    }
+    .demo-creds-title {
+      font-weight: 700;
+      color: var(--primary-teal);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .creds-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .creds-row:last-child { border-bottom: none; }
+    .creds-role { color: var(--text-secondary); }
+    .creds-val { font-family: var(--font-mono); color: var(--text-primary); }
+    .quick-fill-btn {
+      background: none;
+      border: none;
+      color: var(--ice-blue);
+      cursor: pointer;
+      text-decoration: underline;
+      font-size: 0.72rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="brand-header">
+        <svg class="brand-logo-large" viewBox="0 0 40 40" fill="none">
+          <polygon points="20,2 38,11 38,29 20,38 2,29 2,11" stroke="#14B8A6" stroke-width="2.5" fill="rgba(20, 184, 166, 0.12)"/>
+          <path d="M20 10V30M11 15L29 25M11 25L29 15" stroke="#6EE7C8" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <h1 class="login-title">ZERO<span>//</span>TRUST</h1>
+        <div class="login-subtitle">Security Console Authentication</div>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash-alert flash-{{ category }}" style="margin-bottom: 1.25rem;">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form action="{{ url_for('auth.login', next=request.args.get('next')) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        
+        <div style="margin-bottom: 1.25rem;">
+          <label class="zt-label" for="username">Username</label>
+          <input type="text" id="username" name="username" class="zt-input" placeholder="e.g. admin" value="{{ username or '' }}" required autofocus autocomplete="username">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label class="zt-label" for="password">Password</label>
+          <input type="password" id="password" name="password" class="zt-input" placeholder="••••••••••••" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn-zt-primary" style="width: 100%; padding: 0.75rem; font-size: 0.95rem;">
+          Authenticate Identity &rarr;
+        </button>
+      </form>
+
+      <!-- Pre-seeded Demonstration Credentials -->
+      <div class="demo-creds-box">
+        <div class="demo-creds-title">
+          <span>Demonstration Accounts</span>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">Quick-Fill</span>
+        </div>
+        
+        <div class="creds-row">
+          <span class="creds-role">Administrator:</span>
+          <span class="creds-val">admin</span>
+          <button type="button" class="quick-fill-btn" onclick="fillCreds('admin', 'AdminPassword123!')">Fill</button>
+        </div>
+        <div class="creds-row">
+          <span class="creds-role">Manager:</span>
+          <span class="creds-val">manager</span>
+          <button type="button" class="quick-fill-btn" onclick="fillCreds('manager', 'ManagerPassword123!')">Fill</button>
+        </div>
+        <div class="creds-row">
+          <span class="creds-role">Employee:</span>
+          <span class="creds-val">employee</span>
+          <button type="button" class="quick-fill-btn" onclick="fillCreds('employee', 'EmployeePassword123!')">Fill</button>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 1.5rem; font-size: 0.8rem;">
+        <a href="{{ url_for('landing.index') }}" style="color: var(--text-secondary);">&larr; Return to Public Portal</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function fillCreds(u, p) {
+      document.getElementById('username').value = u;
+      document.getElementById('password').value = p;
+    }
+  </script>
+</body>
+</html>

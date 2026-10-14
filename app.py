@@ -99,8 +99,10 @@ def create_app(config_name=None):
 
     return app
 
+# Vercel imports this module and looks for a top-level Flask instance.
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app()
     with app.app_context():
         # Ensure database tables exist on direct run
         db.create_all()

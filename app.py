@@ -97,16 +97,34 @@ def create_app(config_name=None):
             return {'success': False, 'error': 'Internal server error occurred.'}, 500
         return render_template('errors/500.html', error=error), 500
 
+    # Ensure database schema and initial seed data exist (e.g. on Vercel or fresh deploy)
+    if not app.config.get('TESTING'):
+        init_db_with_seed(app)
+
     return app
+
+def init_db_with_seed(app):
+    """Ensure database tables and initial demonstration seed data exist."""
+    with app.app_context():
+        try:
+            from models import User
+            if User.query.first():
+                return
+        except Exception:
+            pass
+
+        try:
+            from models import db
+            db.create_all()
+            from scripts.seed_demo_data import seed_data
+            seed_data(app)
+        except Exception as e:
+            app.logger.warning(f"Database auto-initialization notice: {e}")
 
 # Vercel imports this module and looks for a top-level Flask instance.
 app = create_app()
 
 if __name__ == '__main__':
-    with app.app_context():
-        # Ensure database tables exist on direct run
-        db.create_all()
-        
     print("[*] ZERO//TRUST Security Command Center starting...")
     print("[*] Access web console at: http://127.0.0.1:5000")
     app.run(host='127.0.0.1', port=5000, debug=True)

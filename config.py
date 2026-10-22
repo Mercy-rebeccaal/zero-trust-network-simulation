@@ -1,4 +1,5 @@
 import os
+import tempfile
 from datetime import timedelta
 from dotenv import load_dotenv
 
@@ -6,6 +7,26 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+def get_database_uri():
+    """Determine the appropriate database URI based on environment."""
+    # 1. Custom external database URI (e.g., PostgreSQL on Supabase/Neon/Render)
+    db_uri = os.environ.get('DATABASE_URI')
+    if db_uri:
+        if db_uri.startswith('postgres://'):
+            db_uri = db_uri.replace('postgres://', 'postgresql://', 1)
+        return db_uri
+
+    # 2. Vercel serverless environment: only temp directory is writable
+    if os.environ.get('VERCEL') == '1' or os.environ.get('VERCEL_ENV'):
+        temp_dir = tempfile.gettempdir()
+        temp_db_path = os.path.join(temp_dir, 'zero_trust.db').replace('\\', '/')
+        return f"sqlite:///{temp_db_path}"
+
+    # 3. Local development environment: instance/zero_trust.db
+    instance_dir = os.path.join(BASE_DIR, 'instance')
+    os.makedirs(instance_dir, exist_ok=True)
+    return f"sqlite:///{os.path.join(instance_dir, 'zero_trust.db')}"
 
 class Config:
     """Base application configuration."""
@@ -31,10 +52,7 @@ class Config:
 class DevelopmentConfig(Config):
     """Development environment configuration."""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'DATABASE_URI',
-        f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'zero_trust.db')}"
-    )
+    SQLALCHEMY_DATABASE_URI = get_database_uri()
 
 class TestingConfig(Config):
     """Testing configuration with in-memory SQLite database."""
@@ -47,8 +65,8 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
-    SESSION_COOKIE_SECURE = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI')
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() in ('true', '1')
+    SQLALCHEMY_DATABASE_URI = get_database_uri()
 
 config_by_name = {
     'development': DevelopmentConfig,
